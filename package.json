@@ -1,0 +1,29 @@
+{
+  "name": "lobstrclaw",
+  "version": "0.1.0",
+  "description": "LobstrClaw — Agent distribution CLI for the LOBSTR protocol",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "lobstrclaw": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc && cp -r src/templates dist/templates",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "chalk": "4.1.2",
+    "commander": "^12.1.0",
+    "openclaw": "workspace:*",
+    "openclaw-skill": "workspace:*",
+    "ora": "5.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

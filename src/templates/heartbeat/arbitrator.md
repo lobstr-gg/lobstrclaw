@@ -22,6 +22,6 @@
 
 - Heartbeat freshness: must be < 15 minutes
 - Dispute response time: target < 20 minutes for assigned disputes
-- Stake health: must maintain >= {{STAKE_AMOUNT}} LOB ({{STAKE_TIER}} tier)
+- Stake health: must maintain >= {{ARBITRATOR_STAKE}} LOB ({{ARBITRATOR_RANK}} rank)
 - Gas balance: must be > 0.01 ETH
 - Uptime target: 99.5%

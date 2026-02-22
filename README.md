@@ -2,7 +2,7 @@
 
 **Agent distribution CLI for the LOBSTR protocol.** Spin up your own LOBSTR protocol agent — arbitrator, moderator, or DAO-ops — with production-grade security out of the box.
 
-LobstrClaw packages the battle-tested infrastructure behind the three founding agents (Sentinel, Arbiter, Steward) into a distributable CLI. One command scaffolds a fully configured agent with SOUL identity, heartbeat monitoring, cron automation, and hardened Docker deployment.
+LobstrClaw packages the LOBSTR protocol's production agent infrastructure into a distributable CLI. One command scaffolds a fully configured agent with SOUL identity, heartbeat monitoring, cron automation, and hardened Docker deployment.
 
 ```
 lobstrclaw init my-agent --role moderator --chain base
@@ -42,6 +42,9 @@ This generates:
 vigilance/
   SOUL.md              # Agent identity, cognitive loop, security protocol
   HEARTBEAT.md         # Monitoring intervals and alert escalation
+  IDENTITY.md          # Quick-reference identity card
+  RULES.md             # Protocol rules and security constraints
+  REWARDS.md           # Reward mechanics from on-chain contracts
   crontab              # Role-specific cron schedule
   docker-compose.yml   # Production-hardened container config
   .env.example         # Secrets template
@@ -93,21 +96,21 @@ lobstrclaw status vigilance
 
 ## Agent Roles
 
-| Role | SOUL Template | Stake | Primary Duty |
-|------|--------------|-------|-------------|
-| **Moderator** | Derived from Sentinel | 5,000 LOB | Forum moderation, sybil detection, content enforcement |
-| **Arbitrator** | Derived from Arbiter | 25,000 LOB | Dispute resolution, ruling precedent, appeal authority |
-| **DAO-Ops** | Derived from Steward | 5,000 LOB | Treasury monitoring, proposal lifecycle, stream management |
+| Role | Rank | Stake | Dispute Cap | Primary Duty |
+|------|------|-------|-------------|-------------|
+| **Moderator** | Junior | 5,000 LOB | 500 LOB | Forum moderation, sybil detection, content enforcement |
+| **Arbitrator** | Senior | 25,000 LOB | 5,000 LOB | Dispute resolution, ruling precedent, appeal authority |
+| **DAO-Ops** | Junior | 5,000 LOB | 500 LOB | Treasury monitoring, proposal lifecycle, subscription processing |
 
-Each role comes with a complete SOUL.md covering:
+Each role comes with a full document suite:
 
-- **Identity & cognitive loop** — how the agent thinks and deliberates
-- **Decision framework** — prioritized task intervals
-- **DM & communication protocol** — response templates, escalation paths
-- **Security protocol** — threat model, social engineering defense, incident response
-- **Error recovery** — retry chains, escalation procedures
-- **State management** — case logs, precedent tracking, health dashboards
-- **Forbidden actions** — hard constraints the agent must never violate
+| File | Purpose |
+|------|---------|
+| **SOUL.md** | Identity, cognitive loop, decision framework, security protocol, forbidden actions |
+| **HEARTBEAT.md** | Monitoring intervals, alert escalation, health metrics |
+| **IDENTITY.md** | Quick-reference identity card with capabilities and thresholds |
+| **RULES.md** | Protocol-wide rules, evidence hierarchy, security constraints |
+| **REWARDS.md** | On-chain reward mechanics accurate to deployed contracts |
 
 ---
 
@@ -172,7 +175,7 @@ lobstrclaw rep score 0x...
 
 ## Security Hardening
 
-Every agent deployed through LobstrClaw runs with the same production security as the founding agents:
+Every agent deployed through LobstrClaw runs with production-grade security:
 
 **Container isolation:**
 - Read-only filesystem (`read_only: true`)
@@ -244,6 +247,9 @@ lobstrclaw
 │   └── templates/
 │       ├── soul/              # 3 SOUL.md templates (moderator, arbitrator, dao-ops)
 │       ├── heartbeat/         # 3 HEARTBEAT.md templates
+│       ├── identity/          # 3 IDENTITY.md templates
+│       ├── rules/             # Shared RULES.md template
+│       ├── rewards/           # 3 REWARDS.md templates
 │       ├── docker/            # Dockerfile, compose template, entrypoint, .env
 │       ├── scripts/           # alert.sh, vps-setup.sh, init-workspace.sh, grant-roles.sh
 │       └── cron/              # 7 cron scripts (heartbeat, mod, disputes, proposals, etc.)
@@ -251,7 +257,7 @@ lobstrclaw
 └── tsconfig.json
 ```
 
-**Template system:** Simple `{{VAR}}` regex substitution — no template engine dependency. Variables like `{{AGENT_NAME}}`, `{{ROLE_TITLE}}`, `{{STAKE_AMOUNT}}` are replaced at scaffold time. Unresolved vars are left as-is for debugging.
+**Template system:** Simple `{{VAR}}` regex substitution — no template engine dependency. Variables like `{{AGENT_NAME}}`, `{{ROLE_TITLE}}`, `{{ARBITRATOR_RANK}}`, `{{ARBITRATOR_STAKE}}` are replaced at scaffold time. Unresolved vars are left as-is for debugging.
 
 **Monorepo integration:** LobstrClaw depends on `openclaw` (workspace/wallet framework) and `openclaw-skill` (LOBSTR protocol commands) via `workspace:*` references. All three packages build with `tsc` and share the same TypeScript config.
 
@@ -275,15 +281,15 @@ Tested providers: Hetzner (EU/US), Vultr, OVH. Any provider with Docker support 
 
 ### How is this different from the founding agents?
 
-The founding agents (Sentinel, Arbiter, Steward) are the three original LOBSTR protocol agents with hardcoded identities, specific VPS assignments, and multisig Guardian roles. LobstrClaw lets anyone create new agents with the same infrastructure but customizable identity. Community agents don't get Guardian keys — those are reserved for the founding three.
+The founding agents are the original LOBSTR protocol agents with hardcoded identities and elevated protocol roles. LobstrClaw lets anyone create new agents with the same production infrastructure but customizable identity. Community agents participate as arbitrators, moderators, and DAO-ops contributors through the standard staking and governance mechanisms.
 
 ### Do I need LOB tokens to run an agent?
 
 Yes. Agents must stake LOB to participate in protocol governance:
-- **Moderator / DAO-Ops**: 5,000 LOB (Junior tier)
-- **Arbitrator**: 25,000 LOB (Senior tier)
+- **Moderator / DAO-Ops**: 5,000 LOB (Junior arbitrator rank)
+- **Arbitrator**: 25,000 LOB (Senior arbitrator rank)
 
-You also need a small amount of ETH for gas (~0.05 ETH lasts months on Base at ~$0.001/tx).
+Staking also earns rewards via `StakingRewards` with tier multipliers (Bronze 1x → Platinum 3x). You also need a small amount of ETH for gas (~0.05 ETH lasts months on Base at ~$0.001/tx).
 
 ### Can I run an agent locally for testing?
 
@@ -291,7 +297,7 @@ Yes. Use `--chain base-sepolia` for testnet and `--no-docker` to skip container 
 
 ### What LLM powers the agents?
 
-LobstrClaw generates the agent configuration and infrastructure — it doesn't bundle an LLM. The SOUL.md defines the agent's behavior, and the cron scripts trigger CLI commands. How you connect an LLM to interpret the SOUL and make decisions is up to your deployment. The founding agents use the Discord bot framework in `lobstr-agents` with DeepSeek/GPT for reasoning.
+LobstrClaw generates the agent configuration and infrastructure — it doesn't bundle an LLM. The SOUL.md defines the agent's behavior, and the cron scripts trigger CLI commands. How you connect an LLM to interpret the SOUL and make decisions is up to your deployment.
 
 ### How do I add a custom role?
 

@@ -24,8 +24,9 @@ function buildVars(opts: GenerateOptions): TemplateVars {
     AGENT_CODENAME: opts.name,
     AGENT_NUMBER: opts.agentNumber,
     ROLE_TITLE: roleConfig.title,
-    STAKE_AMOUNT: roleConfig.stakeAmount,
-    STAKE_TIER: roleConfig.stakeTier,
+    ARBITRATOR_RANK: roleConfig.arbitratorRank,
+    ARBITRATOR_STAKE: roleConfig.arbitratorStake,
+    DISPUTE_CAP: roleConfig.disputeCap,
     VPS_DESCRIPTION: opts.vpsDescription,
   };
 }
@@ -74,13 +75,31 @@ export function generateAgentFiles(opts: GenerateOptions): string[] {
   fs.writeFileSync(heartbeatPath, heartbeat);
   created.push('HEARTBEAT.md');
 
-  // 3. Crontab
+  // 3. IDENTITY.md
+  const identity = loadTemplate('identity', roleConfig.identityTemplate, varsRecord);
+  const identityPath = path.join(opts.outputDir, 'IDENTITY.md');
+  fs.writeFileSync(identityPath, identity);
+  created.push('IDENTITY.md');
+
+  // 4. RULES.md (shared across roles)
+  const rules = loadTemplate('rules', 'rules.md', varsRecord);
+  const rulesPath = path.join(opts.outputDir, 'RULES.md');
+  fs.writeFileSync(rulesPath, rules);
+  created.push('RULES.md');
+
+  // 5. REWARDS.md
+  const rewards = loadTemplate('rewards', roleConfig.rewardsTemplate, varsRecord);
+  const rewardsPath = path.join(opts.outputDir, 'REWARDS.md');
+  fs.writeFileSync(rewardsPath, rewards);
+  created.push('REWARDS.md');
+
+  // 6. Crontab
   const crontab = generateCrontab(opts.role, opts.codename);
   const crontabPath = path.join(opts.outputDir, 'crontab');
   fs.writeFileSync(crontabPath, crontab);
   created.push('crontab');
 
-  // 4. Docker files (unless --no-docker)
+  // 7. Docker files (unless --no-docker)
   if (opts.docker) {
     const templatesDir = getTemplatesDir();
 
@@ -116,7 +135,7 @@ export function stageDeployBundle(agentDir: string, name: string, stagingDir: st
   fs.mkdirSync(stagingDir, { recursive: true });
 
   // Copy agent-specific files
-  const agentFiles = ['SOUL.md', 'HEARTBEAT.md', 'crontab', 'docker-compose.yml'];
+  const agentFiles = ['SOUL.md', 'HEARTBEAT.md', 'IDENTITY.md', 'RULES.md', 'REWARDS.md', 'crontab', 'docker-compose.yml'];
   for (const file of agentFiles) {
     const src = path.join(agentDir, file);
     if (fs.existsSync(src)) {

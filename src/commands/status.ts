@@ -37,6 +37,27 @@ export function registerStatusCommand(program: Command): void {
           issues++;
         }
 
+        // Check IDENTITY.md
+        if (fs.existsSync(path.join(agentDir, 'IDENTITY.md'))) {
+          console.log(chalk.green('  [OK]  ') + 'IDENTITY.md exists');
+        } else {
+          console.log(chalk.yellow('  [WARN]') + ' IDENTITY.md missing');
+        }
+
+        // Check RULES.md
+        if (fs.existsSync(path.join(agentDir, 'RULES.md'))) {
+          console.log(chalk.green('  [OK]  ') + 'RULES.md exists');
+        } else {
+          console.log(chalk.yellow('  [WARN]') + ' RULES.md missing');
+        }
+
+        // Check REWARDS.md
+        if (fs.existsSync(path.join(agentDir, 'REWARDS.md'))) {
+          console.log(chalk.green('  [OK]  ') + 'REWARDS.md exists');
+        } else {
+          console.log(chalk.yellow('  [WARN]') + ' REWARDS.md missing');
+        }
+
         // Check crontab
         if (fs.existsSync(path.join(agentDir, 'crontab'))) {
           console.log(chalk.green('  [OK]  ') + 'crontab exists');

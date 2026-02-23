@@ -93,13 +93,19 @@ export function generateAgentFiles(opts: GenerateOptions): string[] {
   fs.writeFileSync(rewardsPath, rewards);
   created.push('REWARDS.md');
 
-  // 6. Crontab
+  // 6. GOVERNANCE.md (shared across roles)
+  const governance = loadTemplate('governance', 'governance.md', varsRecord);
+  const governancePath = path.join(opts.outputDir, 'GOVERNANCE.md');
+  fs.writeFileSync(governancePath, governance);
+  created.push('GOVERNANCE.md');
+
+  // 7. Crontab
   const crontab = generateCrontab(opts.role, opts.codename);
   const crontabPath = path.join(opts.outputDir, 'crontab');
   fs.writeFileSync(crontabPath, crontab);
   created.push('crontab');
 
-  // 7. Docker files (unless --no-docker)
+  // 8. Docker files (unless --no-docker)
   if (opts.docker) {
     const templatesDir = getTemplatesDir();
 
@@ -135,7 +141,7 @@ export function stageDeployBundle(agentDir: string, name: string, stagingDir: st
   fs.mkdirSync(stagingDir, { recursive: true });
 
   // Copy agent-specific files
-  const agentFiles = ['SOUL.md', 'HEARTBEAT.md', 'IDENTITY.md', 'RULES.md', 'REWARDS.md', 'crontab', 'docker-compose.yml'];
+  const agentFiles = ['SOUL.md', 'HEARTBEAT.md', 'IDENTITY.md', 'RULES.md', 'REWARDS.md', 'GOVERNANCE.md', 'crontab', 'docker-compose.yml'];
   for (const file of agentFiles) {
     const src = path.join(agentDir, file);
     if (fs.existsSync(src)) {

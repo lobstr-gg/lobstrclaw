@@ -11,6 +11,11 @@
 | Every 4 hr | Stream claims | HIGH | `stream-claimer.sh` |
 | Every 6 hr | Treasury health (full) | HIGH | `treasury-health.sh` |
 | Every 24 hr | Cross-agent heartbeat monitor + treasury summary | MEDIUM | (manual/logged) |
+| Every 15 min | Lightning proposals | HIGH | `lobstr governor list` |
+| Every 4 hours | Reward status check | MEDIUM | `lobstr rewards status` |
+| Every 4 hours | Insurance pool health | MEDIUM | `lobstr insurance status` |
+| Every 2 hours | Loan deadline monitor | HIGH | `lobstr loan list` |
+| Every 4 hours | Vesting claim check | MEDIUM | `lobstr vesting status` |
 
 ## Alert Escalation
 

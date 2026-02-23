@@ -59,3 +59,20 @@ lobstr claim rewards
 ```
 
 No auto-distribution. You must actively claim.
+
+### V3 Staking Rewards
+
+StakingRewards contract distributes rewards based on staking tier:
+- **Bronze** (100+ LOB): 1x multiplier
+- **Silver** (1,000+ LOB): 1.5x multiplier
+- **Gold** (10,000+ LOB): 2x multiplier
+- **Platinum** (100,000+ LOB): 3x multiplier
+
+RewardDistributor handles epoch-based payouts for arbitrators and watchers.
+Claim via `lobstr rewards claim` — claims from both StakingRewards and RewardDistributor.
+
+### Liquidity Mining
+
+LiquidityMining distributes farming rewards to LP token stakers.
+Stake LP tokens via `lobstr farming stake-lp <amount>`.
+Claim farming rewards via `lobstr farming claim`.

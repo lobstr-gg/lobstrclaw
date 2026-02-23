@@ -10,6 +10,8 @@
 | Every 1 hr | Proposal check | MEDIUM | `proposal-monitor.sh` |
 | Every 4 hr | Treasury + gas health | LOW | `treasury-health.sh` |
 | Every 24 hr | Daily moderation stats | LOW | (manual/logged) |
+| Every 4 hours | Reward status check | MEDIUM | `lobstr rewards status` |
+| Every 6 hours | Insurance pool health | LOW | `lobstr insurance status` |
 
 ## Alert Escalation
 

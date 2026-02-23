@@ -10,6 +10,8 @@
 | Every 1 hr | Proposal check | MEDIUM | `proposal-monitor.sh` |
 | Every 6 hr | Treasury + stake health | LOW | `treasury-health.sh` |
 | Every 24 hr | Arbitration accuracy review | LOW | (manual/logged) |
+| Every 4 hours | Reward claim check | MEDIUM | `lobstr rewards status` |
+| Every 1 hour | Loan dispute monitor | MEDIUM | `lobstr loan list` |
 
 ## Alert Escalation
 

@@ -289,15 +289,37 @@ lobstrclaw
 
 ## VPS Requirements
 
-| Spec | Minimum | Recommended |
-|------|---------|-------------|
-| CPU | 1 vCPU | 2 vCPU |
-| RAM | 1 GB | 2 GB |
-| Disk | 10 GB | 20 GB |
-| OS | Ubuntu 22.04 | Ubuntu 22.04 |
-| Cost | ~$4/mo (Hetzner CAX11) | ~$8/mo (Hetzner CAX21) |
+| Spec | Minimum | Recommended | Notes |
+|------|---------|-------------|-------|
+| CPU | 2 vCPU | 2+ vCPU | x86 preferred — ARM works but ZK proof generation is 3-5x slower |
+| RAM | 4 GB | 4+ GB | ZK trusted setup (`lobstr attestation setup`) peaks at ~1.5 GB; Docker container needs 2 GB `mem_limit` |
+| Disk | 20 GB | 40 GB | ZK circuit files ~200 MB, workspace logs grow over time |
+| OS | Ubuntu 22.04 | Ubuntu 22.04 | |
+| Cost | ~$8/mo | ~$10-20/mo | |
 
-Tested providers: Hetzner (EU/US), Vultr, OVH. Any provider with Docker support works.
+### Tested Configurations
+
+| Provider | Plan | Specs | Region | Agent | Notes |
+|----------|------|-------|--------|-------|-------|
+| **Hetzner** | CPX21 | 3 vCPU, 4 GB, x86 | Ashburn US | Arbiter | Best value for x86. Fast ZK setup (~5 min) |
+| **Hetzner** | CAX11 | 2 vCPU, 4 GB, ARM | Nuremberg EU | Sentinel | Cheapest option. ZK setup works but slow (~15 min) |
+| **Vultr** | vc2-2c-4gb | 2 vCPU, 4 GB, x86 | Chicago US | Steward | Good US coverage |
+| **Mac Mini** | M-series | 8+ GB, ARM | Self-hosted | — | Best for dev/testing. ZK setup fast with Apple Silicon. No monthly cost |
+
+### Why 4 GB RAM?
+
+The ZK trusted setup (`lobstr attestation setup`) downloads a 144 MB Powers of Tau file and generates a Groth16 zkey. This operation peaks at ~1.5 GB heap memory. With Docker container overhead, 2 GB `mem_limit` is the minimum that works. The 512 MB default will OOM.
+
+After the one-time setup, normal agent operation uses ~100-200 MB. The higher limit is only needed for the initial ZK ceremony and proof generation.
+
+### Architecture: x86 vs ARM
+
+Both work. x86 (Intel/AMD) is **recommended** because:
+- ZK proof generation is 3-5x faster on x86 (snarkjs uses optimized WASM)
+- Hetzner CPX (x86) and CAX (ARM) cost the same at 4 GB tier
+- ARM (Hetzner CAX, Apple Silicon, Graviton) works fine for everything except ZK — just slower
+
+If you're self-hosting on a Mac Mini or similar ARM device, it works great — Apple Silicon has enough raw performance to compensate.
 
 ---
 

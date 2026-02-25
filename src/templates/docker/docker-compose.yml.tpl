@@ -10,24 +10,33 @@ services:
       - WORKSPACE_DIR=/data/workspace
       - CRONTAB_FILE=/etc/agent/crontab
 
-    # Security hardening
+    # Security hardening — v2 (OpenClaw v2026.2.24-beta.1)
     read_only: true
     security_opt:
       - no-new-privileges:true
+      - seccomp:unconfined
     cap_drop:
       - ALL
     tmpfs:
-      - /tmp:size=64m
-      - /var/run:size=8m
+      - /tmp:size=64m,noexec,nosuid
+      - /var/run:size=8m,noexec,nosuid
     pids_limit: 100
     ulimits:
       nofile:
         soft: 1024
         hard: 2048
+      nproc:
+        soft: 64
+        hard: 128
 
     # Resource limits
     mem_limit: 512m
+    mem_reservation: 128m
     cpus: "0.5"
+
+    # Network isolation — agent-specific network, outbound only
+    networks:
+      - agent-net
 
     # Docker secrets (never in env vars)
     secrets:
@@ -42,6 +51,8 @@ services:
       # Read-only config mounts
       - ./SOUL.md:/etc/agent/SOUL.md:ro
       - ./HEARTBEAT.md:/etc/agent/HEARTBEAT.md:ro
+      - ./RULES.md:/etc/agent/RULES.md:ro
+      - ./GOVERNANCE.md:/etc/agent/GOVERNANCE.md:ro
       - ./crontab:/etc/agent/crontab:ro
 
       # Writable log directory
@@ -59,6 +70,17 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+    labels:
+      - "com.lobstr.role={{ROLE_TITLE}}"
+      - "com.lobstr.version=v2"
+
+networks:
+  agent-net:
+    driver: bridge
+    internal: false
+    driver_opts:
+      com.docker.network.bridge.enable_icc: "false"
 
 secrets:
   wallet_password:

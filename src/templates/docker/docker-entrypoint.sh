@@ -6,6 +6,14 @@ WORKSPACE_DIR="${WORKSPACE_DIR:-/data/workspace}"
 CRONTAB_FILE="${CRONTAB_FILE:-/etc/agent/crontab}"
 
 echo "[entrypoint] Starting agent: ${AGENT_NAME}"
+echo "[entrypoint] Security version: v2 (OpenClaw 2026.2.24-beta.1)"
+
+# ── 0. Sanitize inherited environment ──────────────────────────────────
+# Strip dangerous injection vectors (ported from OpenClaw security/exec)
+for VAR_NAME in $(printenv | grep -oE '^(LD_[A-Z_]+|DYLD_[A-Z_]+|SSLKEYLOGFILE|NODE_OPTIONS|BASH_ENV|BASH_FUNC_[A-Z_]+|PYTHONSTARTUP|PERL5OPT|RUBYOPT)=' | cut -d= -f1); do
+  unset "${VAR_NAME}" 2>/dev/null || true
+done
+echo "[entrypoint] Environment sanitized"
 
 # ── 1. Read secrets from Docker secret mounts ──────────────────────────
 # Validate secret permissions — must not be world-readable
@@ -83,5 +91,12 @@ fi
 
 echo "[entrypoint] Agent ${AGENT_NAME} is running. Starting cron..."
 
-# ── 7. Run cron in foreground (keeps container alive) ──────────────────
+# ── 8. Verify no secrets leaked to /etc/environment ────────────────────
+if grep -qiE '(PASSWORD|SECRET|PRIVATE_KEY)' /etc/environment 2>/dev/null; then
+  echo "[entrypoint] CRITICAL: Secrets detected in /etc/environment — scrubbing"
+  sed -i '/PASSWORD\|SECRET\|PRIVATE_KEY/Id' /etc/environment 2>/dev/null || true
+  /opt/scripts/alert.sh "critical" "${AGENT_NAME}" "Secrets found in /etc/environment at startup — scrubbed"
+fi
+
+# ── 9. Run cron in foreground (keeps container alive) ──────────────────
 exec cron -f

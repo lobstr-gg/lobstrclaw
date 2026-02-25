@@ -7,6 +7,7 @@ import { registerDeployCommand } from './commands/deploy';
 import { registerStatusCommand } from './commands/status';
 import { registerAuditCommand } from './commands/audit';
 import { registerDoctorCommand } from './commands/doctor';
+import { registerConsensusCommand } from './commands/consensus';
 
 const program = new Command();
 
@@ -24,5 +25,6 @@ registerDeployCommand(program);
 registerStatusCommand(program);
 registerAuditCommand(program);
 registerDoctorCommand(program);
+registerConsensusCommand(program);
 
 program.parse(process.argv);

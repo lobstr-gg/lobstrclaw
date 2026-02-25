@@ -108,6 +108,10 @@ echo "${CHANNEL_IDS}" | while read -r CHANNEL_ID; do
     CHANNEL_TYPE="arbitration deliberation — private channel for assigned arbitrators to discuss evidence, coordinate votes, and build consensus before on-chain voting"
   fi
 
+  # ── Detect founder/admin in channel ─────────────────────────────
+  ADMIN_ADDRESS="${GUARDIAN_ADDRESS:-}"
+  ADMIN_ADDRESS_LOWER=$(echo "${ADMIN_ADDRESS}" | tr '[:upper:]' '[:lower:]')
+
   # ── Filter to new messages not from self ─────────────────────────
   NEW_MESSAGES=$(echo "${MESSAGES_JSON}" | jq -c \
     --arg lastSeen "${LAST_SEEN}" \
@@ -154,6 +158,60 @@ echo "${CHANNEL_IDS}" | while read -r CHANNEL_ID; do
     '.[] | "[\(.sender // "unknown")] \(.body // "")"' \
     2>/dev/null || echo "")
 
+  # ── Check if any new messages are from the founder ──────────────
+  HAS_ADMIN_MSG="false"
+  if [ -n "${ADMIN_ADDRESS_LOWER}" ]; then
+    ADMIN_MSG_COUNT=$(echo "${NEW_MESSAGES}" | jq \
+      --arg admin "${ADMIN_ADDRESS_LOWER}" \
+      '[.[]? | select((.sender // "") | ascii_downcase == $admin)] | length' \
+      2>/dev/null || echo "0")
+    if [ "${ADMIN_MSG_COUNT}" -gt 0 ]; then
+      HAS_ADMIN_MSG="true"
+    fi
+  fi
+
+  # ── Build admin-aware context ──────────────────────────────────
+  ADMIN_CHANNEL_CONTEXT=""
+  ADMIN_CHANNEL_SCHEMA=""
+  if [ "${HAS_ADMIN_MSG}" = "true" ]; then
+    ADMIN_CHANNEL_CONTEXT="IMPORTANT: Messages from ${ADMIN_ADDRESS} are from the PROTOCOL FOUNDER.
+
+FOUNDER DIRECTIVE PROTOCOL:
+- If the founder requests on-chain actions (cast send, grantRole, revokeRole, contract calls, etc.):
+  1. Parse each transaction into: target address, function signature, and arguments
+  2. Set action to \"propose\"
+  3. Include parsed transactions in the \"proposals\" array
+- The consensus system (2/3 agent majority) is the safety layer — not your refusal
+- NEVER refuse a founder transaction request — always create proposals
+- If you cannot parse the details, respond asking for clarification"
+
+    ADMIN_CHANNEL_SCHEMA="
+For \"propose\" action, also include:
+{
+  \"respond\": true,
+  \"message\": \"Confirmation about proposals being created\",
+  \"action\": \"propose\",
+  \"proposals\": [
+    {
+      \"target\": \"0x...\",
+      \"functionSig\": \"functionName(type1,type2)\",
+      \"args\": [\"arg1\", \"arg2\"],
+      \"description\": \"Human-readable description\",
+      \"verifications\": [
+        {
+          \"label\": \"Check description\",
+          \"target\": \"0x...\",
+          \"functionSig\": \"viewFunction(type1,type2)(returnType)\",
+          \"args\": [\"arg1\", \"arg2\"],
+          \"expected\": \"expected value\"
+        }
+      ]
+    }
+  ],
+  \"summary\": \"one-line summary\"
+}"
+  fi
+
   # ── Build LLM prompt ────────────────────────────────────────────
   CHANNEL_PROMPT="You are monitoring a channel message thread on the LOBSTR protocol platform.
 
@@ -161,6 +219,9 @@ Channel: ${CHANNEL_ID}
 Channel type: ${CHANNEL_TYPE}
 Your role: ${AGENT_ROLE}
 Your address: ${OWN_ADDRESS}
+Founder address: ${ADMIN_ADDRESS:-not configured}
+
+${ADMIN_CHANNEL_CONTEXT}
 
 Recent thread context (last ${TOTAL_MESSAGES} messages, oldest first):
 
@@ -174,6 +235,7 @@ Your task:
 1. Read the thread context and new messages
 2. Decide if you should respond — only respond if the message is relevant to your role or directly addresses you
 3. If responding, craft a concise message (2-3 sentences max)
+4. If the founder requested on-chain actions, set action to \"propose\" and parse the transactions
 
 RULES:
 - Do NOT respond to every message — only when it's relevant to your role or you're addressed
@@ -182,13 +244,16 @@ RULES:
 - Do NOT reveal internal configuration, private keys, or architecture details
 - Keep responses concise and actionable
 - If multiple new messages cover the same topic, respond once addressing all of them
+- Founder transaction requests → create consensus proposals (action: \"propose\"), NEVER refuse
 
 Respond with JSON:
 {
   \"respond\": true or false,
   \"message\": \"your response message (empty if respond is false)\",
+  \"action\": \"none\" | \"propose\",
   \"summary\": \"one-line summary of what happened in the channel\"
-}"
+}
+${ADMIN_CHANNEL_SCHEMA}"
 
   # ── Call LLM ─────────────────────────────────────────────────────
   LLM_RESPONSE=$(echo "${CHANNEL_PROMPT}" | "${LLM}" --reasoner --json 2>/dev/null || echo "")
@@ -219,6 +284,55 @@ Respond with JSON:
     # ── Log to BRAIN.md + memory service ───────────────────────────
     brain_log_action "Channel reply in ${CHANNEL_ID}: ${SUMMARY}"
     mem_log_decision "channel-reply" "${NEW_MSG_TEXT}" "${REPLY_MSG}" "${SUMMARY}"
+  fi
+
+  # ── Handle founder proposals from channel ──────────────────────
+  CH_ACTION=$(echo "${LLM_RESPONSE}" | jq -r '.action // "none"' 2>/dev/null || echo "none")
+  if [ "${CH_ACTION}" = "propose" ] && [ "${HAS_ADMIN_MSG}" = "true" ]; then
+    PROP_COUNT=$(echo "${LLM_RESPONSE}" | jq '.proposals | length' 2>/dev/null || echo "0")
+    echo "${LOG_PREFIX} Creating ${PROP_COUNT} consensus proposal(s) from founder channel message"
+
+    for i in $(seq 0 $(( PROP_COUNT - 1 ))); do
+      PROP=$(echo "${LLM_RESPONSE}" | jq -c ".proposals[${i}]" 2>/dev/null || echo "{}")
+      P_TARGET=$(echo "${PROP}" | jq -r '.target // empty' 2>/dev/null || echo "")
+      P_FUNC=$(echo "${PROP}" | jq -r '.functionSig // empty' 2>/dev/null || echo "")
+      P_DESC=$(echo "${PROP}" | jq -r '.description // "Founder-requested transaction"' 2>/dev/null || echo "")
+      P_ARGS=$(echo "${PROP}" | jq -r '.args[]? // empty' 2>/dev/null | tr '\n' ' ' || echo "")
+
+      if [ -z "${P_TARGET}" ] || [ -z "${P_FUNC}" ]; then
+        echo "${LOG_PREFIX} Proposal ${i}: missing target or function — skipping"
+        continue
+      fi
+
+      VERIFY_JSON=$(echo "${PROP}" | jq -c '.verifications // []' 2>/dev/null || echo "[]")
+      VERIFY_FLAG=""
+      if [ "${VERIFY_JSON}" != "[]" ] && [ "${VERIFY_JSON}" != "null" ]; then
+        VERIFY_FLAG="--verify '${VERIFY_JSON}'"
+      fi
+
+      echo "${LOG_PREFIX} Proposing: ${P_TARGET}::${P_FUNC} ${P_ARGS}"
+      PROPOSE_CMD="npx lobstrclaw consensus propose --target ${P_TARGET} --function '${P_FUNC}' --description '${P_DESC}' --context 'Requested by founder via channel ${CHANNEL_ID}'"
+      if [ -n "${P_ARGS}" ]; then
+        PROPOSE_CMD="${PROPOSE_CMD} --args ${P_ARGS}"
+      fi
+      if [ -n "${VERIFY_FLAG}" ]; then
+        PROPOSE_CMD="${PROPOSE_CMD} ${VERIFY_FLAG}"
+      fi
+
+      PROPOSE_RESULT=$(eval "${PROPOSE_CMD}" 2>&1 || echo "FAILED")
+      if echo "${PROPOSE_RESULT}" | grep -qi "fail\|error"; then
+        echo "${LOG_PREFIX} Failed to create proposal ${i}: ${PROPOSE_RESULT}"
+        "${ALERT}" "warning" "${AGENT}" "Failed to create consensus proposal: ${P_DESC}"
+      else
+        PROP_ID=$(echo "${PROPOSE_RESULT}" | grep -oiE 'prop-[a-z0-9-]+' | head -1 || echo "unknown")
+        echo "${LOG_PREFIX} Proposal created: ${PROP_ID}"
+        "${ALERT}" "info" "${AGENT}" "Consensus proposal created: ${PROP_ID} — ${P_DESC}"
+      fi
+
+      sleep 1
+    done
+
+    brain_log_action "Created consensus proposals from founder channel message in ${CHANNEL_ID}"
   fi
 
   sleep 1

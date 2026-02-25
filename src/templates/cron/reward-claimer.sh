@@ -2,7 +2,7 @@
 # reward-claimer.sh — Auto-claim StakingRewards + RewardDistributor payouts
 # Runs every 4 hours for all roles
 set -euo pipefail
-source /etc/environment
+source /tmp/agent-env 2>/dev/null || true
 
 LOG="/var/log/agent/reward-claimer.log"
 

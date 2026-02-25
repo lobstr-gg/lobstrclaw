@@ -69,7 +69,7 @@ echo "[entrypoint] Workspace verified at ${WORKSPACE_DIR}"
 # Exclude secrets (PASSWORD, SECRET, KEY) — cron jobs read those from /run/secrets
 printenv | grep -E '^(OPENCLAW_|LOBSTR_|AGENT_|WORKSPACE_|PATH=)' \
   | grep -viE '(PASSWORD|SECRET|PRIVATE_KEY)' \
-  > /etc/environment 2>/dev/null || true
+  > /tmp/agent-env || true
 
 # ── 4. Start heartbeat daemon ──────────────────────────────────────────
 echo "[entrypoint] Starting heartbeat daemon..."
@@ -90,13 +90,6 @@ fi
 /opt/scripts/alert.sh "info" "${AGENT_NAME}" "Agent started successfully on $(hostname)"
 
 echo "[entrypoint] Agent ${AGENT_NAME} is running. Starting cron..."
-
-# ── 8. Verify no secrets leaked to /etc/environment ────────────────────
-if grep -qiE '(PASSWORD|SECRET|PRIVATE_KEY)' /etc/environment 2>/dev/null; then
-  echo "[entrypoint] CRITICAL: Secrets detected in /etc/environment — scrubbing"
-  sed -i '/PASSWORD\|SECRET\|PRIVATE_KEY/Id' /etc/environment 2>/dev/null || true
-  /opt/scripts/alert.sh "critical" "${AGENT_NAME}" "Secrets found in /etc/environment at startup — scrubbed"
-fi
 
 # ── 9. Run cron in foreground (keeps container alive) ──────────────────
 exec cron -f

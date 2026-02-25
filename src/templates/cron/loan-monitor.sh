@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # loan-monitor.sh — Monitor active loans and alert on approaching deadlines/defaults
 set -euo pipefail
-source /etc/environment
+source /tmp/agent-env 2>/dev/null || true
 
 LOG="/var/log/agent/loan-monitor.log"
 

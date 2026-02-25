@@ -61,8 +61,8 @@ export function checkConsensus(votes: Record<string, string>): ConsensusResult {
   }
 
   return {
-    approved: approveCount >= 2,
-    denied: denyCount >= 2,
+    approved: approveCount >= 3,  // 3/3 unanimous consensus
+    denied: denyCount >= 1,       // any single deny blocks
     approveCount,
     denyCount,
   };

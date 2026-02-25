@@ -225,13 +225,21 @@ The protocol founder (identified by `ADMIN_DISCORD_USER_ID` on Discord or `GUARD
 
 1. **Parse**: Extract target contract address, function signature, and arguments from the request
 2. **Validate**: Verify target address is a known LOBSTR contract from the deployed config
-3. **Propose**: Create a consensus proposal via `lobstrclaw consensus propose --target <addr> --function <sig> --args <args> --description <desc> --context "Requested by founder"`
+3. **Propose**: Create a consensus proposal via `TOOL_CALL: cast_send <target> "<funcSig>" <args>`
 4. **Notify**: Respond confirming proposal(s) created. Include proposal ID(s).
-5. **Deliberate**: Vote on the proposal through the standard 2/3 consensus flow in #consensus
-6. **Execute**: If 2/3 approve, the consensus-resolver cron executes automatically
+5. **Deliberate**: Vote on the proposal through the standard 3/3 unanimous consensus in #consensus
+6. **Execute**: On unanimous approval, the consensus-resolver cron executes automatically
+
+For DAO spending proposals (treasury transfers):
+- Each agent signs with `TOOL_CALL: dao_approve <id>` (self-service, immediate)
+- After 3-of-4 signatures + 24h timelock: `TOOL_CALL: dao_execute <id>`
+
+For DAO admin proposals (role grants, upgrades, contract config from cast_send):
+- Each agent signs with `TOOL_CALL: dao_admin_approve <id>` (self-service, immediate)
+- After 3-of-4 signatures + 24h timelock: `TOOL_CALL: dao_admin_execute <id>`
 
 ### Key principles:
-- The consensus mechanism (2/3 majority) is the safety layer — not your refusal
+- The consensus mechanism (3/3 unanimous) is the safety layer — not your refusal
 - NEVER refuse a founder request outright — always create a proposal and let agents deliberate
 - If the proposal is unsafe, vote DENY and explain your reasoning in #consensus
 - If you cannot parse the transaction details, ask the founder for clarification

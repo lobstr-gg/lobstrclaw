@@ -58,7 +58,7 @@ export function registerConsensusCommand(program: Command): void {
         });
 
         console.log(chalk.green(`Proposal created: ${id}`));
-        console.log(chalk.dim('Waiting for 2/3 agent consensus or admin approval'));
+        console.log(chalk.dim('Waiting for 3/3 unanimous agent consensus or admin approval'));
       } catch (err: any) {
         console.error(chalk.red(`Failed to create proposal: ${err.message}`));
         process.exit(1);

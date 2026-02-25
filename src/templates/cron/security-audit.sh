@@ -3,7 +3,7 @@
 # Invoked by cron at 9:00 UTC
 set -euo pipefail
 
-source /etc/environment 2>/dev/null || true
+source /tmp/agent-env 2>/dev/null || true
 
 AGENT="${AGENT_NAME:-unknown}"
 WORKSPACE="${WORKSPACE_DIR:-/data/workspace}"
@@ -39,16 +39,16 @@ for SECRET in wallet_password webhook_url rpc_url; do
   fi
 done
 
-# ── 3. No secrets leaked into /etc/environment ───────────────────────
-if [ -f /etc/environment ]; then
-  if grep -qiE '(PRIVATE_KEY|PASSWORD|SECRET|WALLET_PASS)' /etc/environment 2>/dev/null; then
-    echo "${LOG_PREFIX} FAIL: /etc/environment contains sensitive-looking variables"
+# ── 3. No secrets leaked into /tmp/agent-env ───────────────────────
+if [ -f /tmp/agent-env ]; then
+  if grep -qiE '(PRIVATE_KEY|PASSWORD|SECRET|WALLET_PASS)' /tmp/agent-env 2>/dev/null; then
+    echo "${LOG_PREFIX} FAIL: /tmp/agent-env contains sensitive-looking variables"
     ISSUES=$((ISSUES + 1))
   else
-    echo "${LOG_PREFIX} OK: /etc/environment has no leaked secrets"
+    echo "${LOG_PREFIX} OK: /tmp/agent-env has no leaked secrets"
   fi
 else
-  echo "${LOG_PREFIX} OK: /etc/environment does not exist (acceptable)"
+  echo "${LOG_PREFIX} OK: /tmp/agent-env does not exist (acceptable)"
 fi
 
 # ── 4. Heartbeat file exists and is recent ───────────────────────────

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # insurance-monitor.sh — Monitor InsurancePool health metrics
 set -euo pipefail
-source /etc/environment
+source /tmp/agent-env 2>/dev/null || true
 
 LOG="/var/log/agent/insurance-monitor.log"
 

@@ -122,7 +122,7 @@ FOUNDER DIRECTIVE PROTOCOL:
   1. Parse each transaction into: target address, function signature, and arguments
   2. Set action to \"propose\"
   3. Include parsed transactions in the \"proposals\" array
-- The consensus system (2/3 agent majority) is the safety layer — not your refusal
+- The consensus system (3/3 unanimous) is the safety layer — not your refusal
 - Multiple transactions should each be a separate proposal entry, in the order specified
 - Include verification checks where possible (e.g., hasRole checks after grantRole)
 - If you cannot parse the details, ask for clarification — do NOT refuse"

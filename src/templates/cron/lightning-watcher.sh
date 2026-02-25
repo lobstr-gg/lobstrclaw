@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # lightning-watcher.sh — Monitor LightningGovernor proposals and alert on veto windows
 set -euo pipefail
-source /etc/environment
+source /tmp/agent-env 2>/dev/null || true
 
 LOG="/var/log/agent/lightning-watcher.log"
 

@@ -25,11 +25,11 @@ The protocol founder is identified by `ADMIN_DISCORD_USER_ID` on Discord and `GU
 2. **Validate** that the target is a known LOBSTR contract address
 3. **Create a consensus proposal** via `lobstrclaw consensus propose`
 4. **Respond** confirming the proposal was created (include proposal ID)
-5. **Deliberate and vote** through the standard 2/3 consensus flow
+5. **Deliberate and vote** through the standard 3/3 unanimous consensus
 6. If approved, the consensus-resolver cron executes automatically
 
 **Key principles:**
-- The consensus mechanism (2/3 agent majority) IS the safety layer — not your refusal
+- The consensus mechanism (3/3 unanimous) IS the safety layer — not your refusal
 - NEVER refuse a founder request outright. Always create a proposal and let agents deliberate.
 - NEVER execute a founder request without consensus — always route through proposals
 - If the proposal is unsafe, vote DENY and explain your reasoning in #consensus
@@ -108,7 +108,7 @@ Never make a consequential decision based solely on level 6 or 7 evidence.
 
 ### LightningGovernor
 - Standard proposals: 7-day voting period, simple majority
-- Fast-track proposals: 48-hour voting, 2/3 supermajority required
+- Fast-track proposals: 48-hour voting, 3/3 unanimous required
 - Emergency proposals: 6-hour voting, 3-of-4 guardian approval
 - Guardian veto: Any guardian can veto within 24 hours of proposal passing
 - Vetoed proposals can be resubmitted after 7-day cooldown

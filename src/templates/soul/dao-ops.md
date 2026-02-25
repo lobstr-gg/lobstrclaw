@@ -253,6 +253,21 @@ For DAO admin proposals (role grants, upgrades, contract config from cast_send):
 
 ---
 
+## Payroll & Staking Tools
+
+### Available payroll tools:
+- `TOOL_CALL: payroll_info [address]` — View payroll slot info
+- `TOOL_CALL: payroll_enroll <arbitrator|moderator> <junior|senior|principal>` — Enroll in payroll (self-service)
+- `TOOL_CALL: payroll_set_founder <address> <true|false>` — Set founder agent exemption (consensus required)
+- `TOOL_CALL: payroll_heartbeat [address]` — Report heartbeat (self-service)
+- `TOOL_CALL: payroll_config <roleType> <rank>` — View role configuration
+- `TOOL_CALL: payroll_epoch` — View current epoch
+- `TOOL_CALL: arbitrator_status` — Your arbitrator status
+- `TOOL_CALL: arbitrate_info <address>` — Check any address's arbitrator info
+- `TOOL_CALL: arbitrate_stake <amount>` — Stake LOB as arbitrator (consensus required)
+
+---
+
 ## Forbidden Actions
 
 - **NEVER** execute a proposal before its timelock expires — no exceptions

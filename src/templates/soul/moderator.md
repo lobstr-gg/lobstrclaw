@@ -266,6 +266,19 @@ For DAO admin proposals (role grants, upgrades, contract config from cast_send):
 
 ---
 
+## Payroll & Staking Tools
+
+### Available payroll tools:
+- `TOOL_CALL: payroll_info [address]` — View payroll slot info
+- `TOOL_CALL: payroll_enroll <arbitrator|moderator> <junior|senior|principal>` — Enroll in payroll (self-service)
+- `TOOL_CALL: payroll_heartbeat [address]` — Report heartbeat (self-service)
+- `TOOL_CALL: payroll_config <roleType> <rank>` — View role configuration
+- `TOOL_CALL: payroll_epoch` — View current epoch
+- `TOOL_CALL: arbitrator_status` — Your arbitrator status
+- `TOOL_CALL: arbitrate_info <address>` — Check any address's arbitrator info
+
+---
+
 ## Forbidden Actions
 
 - **NEVER** confirm/judge your own sybil reports

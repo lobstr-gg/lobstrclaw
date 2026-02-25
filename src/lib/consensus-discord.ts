@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 // Consensus Discord — Embed builders and reaction/vote watchers
-// for the #consensus channel
+// for the consensus channel
 // ═══════════════════════════════════════════════════════════════════
 
 import { getDiscordClient, sendMessage } from 'openclaw';
@@ -195,11 +195,11 @@ export async function updateProposalEmbed(
   }
 }
 
-// ── Reaction watcher — Cruz's fast-track approval ────────────────
+// ── Reaction watcher — admin fast-track approval ─────────────────
 
 export function setupReactionWatcher(
   channelId: string,
-  cruzUserId: string,
+  adminUserId: string,
   onApproval: (proposalId: string) => void,
   onDenial: (proposalId: string) => void,
 ): void {
@@ -214,11 +214,11 @@ export function setupReactionWatcher(
       try { await user.fetch(); } catch { return; }
     }
 
-    // Only watch #consensus channel
+    // Only watch the consensus channel
     if (reaction.message.channelId !== channelId) return;
 
-    // Only Cruz's reactions count for fast-track
-    if (user.id !== cruzUserId) return;
+    // Only admin's reactions count for fast-track
+    if (user.id !== adminUserId) return;
 
     // Extract proposal ID from embed footer
     const embed = reaction.message.embeds?.[0];

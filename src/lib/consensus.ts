@@ -13,7 +13,7 @@ import type { VerificationCheck } from './consensus-discord';
 
 export interface ConsensusConfig {
   consensusChannelId: string;
-  cruzDiscordUserId: string;
+  adminDiscordUserId: string;
   agentName: string;
   rpcUrl: string;
   chainId: number;
@@ -93,7 +93,7 @@ export async function proposeTx(
     null, // discord_msg set after embed post
   );
 
-  // 2. Post embed to #consensus
+  // 2. Post embed to consensus channel
   const proposal = await memory.getProposal(id);
   const discordMsgId = await discord.postProposalEmbed(
     config.consensusChannelId,
@@ -105,7 +105,7 @@ export async function proposeTx(
   // The discord_msg field was set to null on create — we store it via context update
   // For now, we'll track the mapping locally; the proposal ID is in the embed footer
 
-  console.log(`[consensus] Proposal ${id} created and posted to #consensus (msg: ${discordMsgId})`);
+  console.log(`[consensus] Proposal ${id} created and posted to consensus channel (msg: ${discordMsgId})`);
 
   return id;
 }
@@ -151,14 +151,14 @@ export async function handleVote(
   return { resolved: false, status: 'pending' };
 }
 
-// ── Cruz fast-track approval ─────────────────────────────────────
+// ── Admin fast-track approval ────────────────────────────────────
 
-export async function handleCruzApproval(
+export async function handleAdminApproval(
   config: ConsensusConfig,
   proposalId: string,
 ): Promise<void> {
   await memory.updateProposalStatus(proposalId, 'approved');
-  console.log(`[consensus] Proposal ${proposalId} FAST-TRACK APPROVED by Cruz`);
+  console.log(`[consensus] Proposal ${proposalId} FAST-TRACK APPROVED by admin`);
 
   const proposal = await memory.getProposal(proposalId);
   if (proposal?.discord_msg) {
@@ -325,15 +325,15 @@ export async function executeAllApproved(
 // ── Start consensus pipeline (Discord watchers) ──────────────────
 
 export function startConsensusPipeline(config: ConsensusConfig): void {
-  // Watch Cruz's reactions for fast-track approval
+  // Watch admin's reactions for fast-track approval
   discord.setupReactionWatcher(
     config.consensusChannelId,
-    config.cruzDiscordUserId,
+    config.adminDiscordUserId,
     async (proposalId) => {
       try {
-        await handleCruzApproval(config, proposalId);
+        await handleAdminApproval(config, proposalId);
       } catch (err: any) {
-        console.error(`[consensus] Cruz approval handler error: ${err.message}`);
+        console.error(`[consensus] Admin approval handler error: ${err.message}`);
       }
     },
     async (proposalId) => {
@@ -343,9 +343,9 @@ export function startConsensusPipeline(config: ConsensusConfig): void {
         if (proposal?.discord_msg) {
           await discord.updateProposalEmbed(config.consensusChannelId, proposal.discord_msg, 'denied');
         }
-        console.log(`[consensus] Proposal ${proposalId} DENIED by Cruz`);
+        console.log(`[consensus] Proposal ${proposalId} DENIED by admin`);
       } catch (err: any) {
-        console.error(`[consensus] Cruz denial handler error: ${err.message}`);
+        console.error(`[consensus] Admin denial handler error: ${err.message}`);
       }
     },
   );
@@ -365,21 +365,21 @@ export function startConsensusPipeline(config: ConsensusConfig): void {
     );
   }
 
-  console.log('[consensus] Pipeline started — watching #consensus for reactions and votes');
+  console.log('[consensus] Pipeline started — watching consensus channel for reactions and votes');
 }
 
 // ── Build config from environment ────────────────────────────────
 
 export function buildConfigFromEnv(): ConsensusConfig {
   const consensusChannelId = process.env.CONSENSUS_CHANNEL_ID;
-  const cruzDiscordUserId = process.env.CRUZ_DISCORD_USER_ID;
+  const adminDiscordUserId = process.env.ADMIN_DISCORD_USER_ID;
   const agentName = process.env.AGENT_NAME;
   const rpcUrl = process.env.OPENCLAW_RPC_URL || process.env.BASE_MAINNET_RPC_URL;
   const chainId = parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || '8453', 10);
   const timeoutMinutes = parseInt(process.env.PROPOSAL_TIMEOUT_MINUTES || '60', 10);
 
   if (!consensusChannelId) throw new Error('CONSENSUS_CHANNEL_ID not set');
-  if (!cruzDiscordUserId) throw new Error('CRUZ_DISCORD_USER_ID not set');
+  if (!adminDiscordUserId) throw new Error('ADMIN_DISCORD_USER_ID not set');
   if (!agentName) throw new Error('AGENT_NAME not set');
   if (!rpcUrl) throw new Error('OPENCLAW_RPC_URL or BASE_MAINNET_RPC_URL not set');
 
@@ -389,7 +389,7 @@ export function buildConfigFromEnv(): ConsensusConfig {
 
   return {
     consensusChannelId,
-    cruzDiscordUserId,
+    adminDiscordUserId,
     agentName,
     rpcUrl,
     chainId,

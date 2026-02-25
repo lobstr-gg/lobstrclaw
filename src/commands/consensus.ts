@@ -24,7 +24,7 @@ export function registerConsensusCommand(program: Command): void {
   // ── propose ────────────────────────────────────────────────────
   consensus
     .command('propose')
-    .description('Create a transaction proposal and post to #consensus')
+    .description('Create a transaction proposal and post to the consensus channel')
     .requiredOption('--target <address>', 'Target contract address')
     .requiredOption('--function <sig>', 'Function signature (e.g. "grantRole(bytes32,address)")')
     .option('--args <args...>', 'Function arguments')
@@ -58,7 +58,7 @@ export function registerConsensusCommand(program: Command): void {
         });
 
         console.log(chalk.green(`Proposal created: ${id}`));
-        console.log(chalk.dim('Waiting for 2/3 agent consensus or Cruz approval in #consensus'));
+        console.log(chalk.dim('Waiting for 2/3 agent consensus or admin approval'));
       } catch (err: any) {
         console.error(chalk.red(`Failed to create proposal: ${err.message}`));
         process.exit(1);

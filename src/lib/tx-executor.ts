@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { execFile, execFileSync } from 'child_process';
-import { loadWallet, decryptKey, getActiveWorkspace } from 'openclaw';
+import { loadWallet, decryptKey, ensureWorkspace } from 'openclaw';
 
 const TX_TIMEOUT_MS = 60_000;
 
@@ -72,7 +72,7 @@ function getPrivateKey(): string {
     throw new Error('OPENCLAW_PASSWORD not set — cannot decrypt wallet');
   }
 
-  const ws = getActiveWorkspace();
+  const ws = ensureWorkspace();
   const wallet = loadWallet(ws.path);
   return decryptKey(wallet, password);
 }
@@ -132,9 +132,9 @@ function executeCastSecure(castArgs: CastSendArgs, privateKey: string): Promise<
 
 async function executeViem(castArgs: CastSendArgs, privateKey: string): Promise<TxResult> {
   try {
-    const { createWalletClient: createViemWallet, http, parseAbiItem } = await import('viem');
-    const { privateKeyToAccount } = await import('viem/accounts');
-    const { base, baseSepolia } = await import('viem/chains');
+    const { createWalletClient: createViemWallet, http, parseAbiItem } = require('viem');
+    const { privateKeyToAccount } = require('viem/accounts');
+    const { base, baseSepolia } = require('viem/chains');
 
     const chainId = parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || '8453', 10);
     const chain = chainId === 84532 ? baseSepolia : base;
@@ -157,7 +157,7 @@ async function executeViem(castArgs: CastSendArgs, privateKey: string): Promise<
     });
 
     // Wait for receipt
-    const { createPublicClient } = await import('viem');
+    const { createPublicClient } = require('viem');
     const publicClient = createPublicClient({
       chain,
       transport: http(castArgs.rpcUrl),
@@ -218,8 +218,8 @@ export async function verifyCastCall(
 
   // Fallback: viem staticCall
   try {
-    const { createPublicClient, http, parseAbiItem } = await import('viem');
-    const { base, baseSepolia } = await import('viem/chains');
+    const { createPublicClient, http, parseAbiItem } = require('viem');
+    const { base, baseSepolia } = require('viem/chains');
 
     const chainId = parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || '8453', 10);
     const chain = chainId === 84532 ? baseSepolia : base;

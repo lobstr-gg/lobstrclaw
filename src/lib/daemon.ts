@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import { spawn, ChildProcess } from 'child_process';
 import * as cron from 'node-cron';
 import { writePid, removePid, pidDir } from './pid';
@@ -16,6 +17,7 @@ export interface DaemonConfig {
 
 const HEARTBEAT_INTERVAL_MS = 300_000; // 5 minutes
 const MAX_BOT_FAILURES = 5;
+const IS_WINDOWS = os.platform() === 'win32';
 
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 let cronTasks: cron.ScheduledTask[] = [];
@@ -47,7 +49,7 @@ export function runDaemon(config: DaemonConfig): void {
     return origStderr.apply(process.stderr, [chunk, ...args] as any);
   } as any;
 
-  log(`Daemon starting: agent=${agentName} role=${role} dir=${agentDir}`);
+  log(`Daemon starting: agent=${agentName} role=${role} dir=${agentDir} platform=${os.platform()}`);
 
   // Write PID file
   writePid(agentDir, {
@@ -57,7 +59,7 @@ export function runDaemon(config: DaemonConfig): void {
     role,
   });
 
-  // Write /tmp/agent-env for cron scripts (mirrors Docker entrypoint behavior)
+  // Write agent-env for cron scripts (mirrors Docker entrypoint behavior)
   writeAgentEnv(env);
 
   // Preprocess cron scripts
@@ -68,11 +70,27 @@ export function runDaemon(config: DaemonConfig): void {
 
   // Start cron scheduler
   if (enableCron) {
-    const roleConfig = ROLES[role];
-    if (roleConfig) {
-      startCronScheduler(roleConfig.cron, cronDir, agentDir, env);
+    if (IS_WINDOWS) {
+      log('WARNING: Cron scripts are bash-based. On Windows, install Git Bash or WSL.');
+      log('Checking for bash availability...');
+      const bashPath = resolveShell();
+      if (!bashPath) {
+        log('ERROR: No bash found. Cron scheduling disabled on this platform.');
+        log('Install Git for Windows (includes bash) or use WSL.');
+      } else {
+        log(`Found shell: ${bashPath}`);
+        const roleConfig = ROLES[role];
+        if (roleConfig) {
+          startCronScheduler(roleConfig.cron, cronDir, agentDir, env);
+        }
+      }
     } else {
-      log(`WARNING: No role config found for '${role}', cron disabled`);
+      const roleConfig = ROLES[role];
+      if (roleConfig) {
+        startCronScheduler(roleConfig.cron, cronDir, agentDir, env);
+      } else {
+        log(`WARNING: No role config found for '${role}', cron disabled`);
+      }
     }
   } else {
     log('Cron scheduling disabled (--no-cron)');
@@ -104,6 +122,35 @@ function log(msg: string): void {
   console.log(`[${ts}] [daemon] ${msg}`);
 }
 
+/**
+ * Resolve the shell to use for running cron scripts.
+ * On Unix: 'bash' (available on macOS and Linux by default)
+ * On Windows: try Git Bash, WSL bash, then fall back to null
+ */
+function resolveShell(): string | null {
+  if (!IS_WINDOWS) return 'bash';
+
+  // Try common Git Bash locations on Windows
+  const candidates = [
+    'C:\\Program Files\\Git\\bin\\bash.exe',
+    'C:\\Program Files (x86)\\Git\\bin\\bash.exe',
+    path.join(os.homedir(), 'scoop', 'apps', 'git', 'current', 'bin', 'bash.exe'),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+
+  // Try 'bash' on PATH (WSL or Git Bash in PATH)
+  try {
+    const { execSync } = require('child_process');
+    execSync('bash --version', { stdio: 'pipe' });
+    return 'bash';
+  } catch {
+    return null;
+  }
+}
+
 function writeAgentEnv(env: Record<string, string>): void {
   const lines: string[] = [];
   for (const [key, value] of Object.entries(env)) {
@@ -113,11 +160,14 @@ function writeAgentEnv(env: Record<string, string>): void {
       lines.push(`${key}=${value}`);
     }
   }
+
+  // Use OS temp directory instead of hardcoded /tmp/
+  const envPath = path.join(os.tmpdir(), 'agent-env');
   try {
-    fs.writeFileSync('/tmp/agent-env', lines.join('\n') + '\n');
-    log('Wrote /tmp/agent-env');
+    fs.writeFileSync(envPath, lines.join('\n') + '\n');
+    log(`Wrote ${envPath}`);
   } catch {
-    log('WARNING: Could not write /tmp/agent-env (non-fatal)');
+    log(`WARNING: Could not write ${envPath} (non-fatal)`);
   }
 }
 
@@ -163,6 +213,9 @@ function preprocessCronScripts(agentDir: string, config: DaemonConfig): string {
 
   const logsDir = path.join(dotDir, 'logs');
 
+  // Use OS temp dir for agent-env path rewriting
+  const tmpDir = os.tmpdir();
+
   // Copy and rewrite each cron script
   for (const file of fs.readdirSync(templateCronDir)) {
     if (!file.endsWith('.sh')) continue;
@@ -173,6 +226,7 @@ function preprocessCronScripts(agentDir: string, config: DaemonConfig): string {
     content = content.replace(/\/opt\/cron\//g, cronDir + '/');
     content = content.replace(/\/var\/log\/agent\//g, logsDir + '/');
     content = content.replace(/\/data\/workspace/g, workspaceDir);
+    content = content.replace(/\/tmp\/agent-env/g, path.join(tmpDir, 'agent-env'));
 
     const dest = path.join(cronDir, file);
     fs.writeFileSync(dest, content, { mode: 0o755 });
@@ -241,6 +295,12 @@ function startCronScheduler(
   env: Record<string, string>,
 ): void {
   const logsDir = path.join(pidDir(agentDir), 'logs');
+  const shell = resolveShell();
+
+  if (!shell) {
+    log('ERROR: No bash shell available — cannot run cron scripts');
+    return;
+  }
 
   for (const job of cronJobs) {
     const scriptPath = path.join(cronDir, job.script);
@@ -259,7 +319,7 @@ function startCronScheduler(
       const ts = new Date().toISOString();
       fs.writeSync(logFd, `\n--- [${ts}] Running ${job.script} ---\n`);
 
-      const child = spawn('bash', [scriptPath], {
+      const child = spawn(shell, [scriptPath], {
         cwd: agentDir,
         env: { ...process.env, ...env },
         stdio: ['ignore', logFd, logFd],
@@ -361,10 +421,7 @@ function shutdown(signal: string): void {
     botProcess = null;
   }
 
-  // Remove PID file — derive agentDir from PID file location
-  // The PID file was written by the caller, we just need to find it
-  // Since we can't easily recover agentDir here, we rely on the stop command
-  // to clean it up, or use process.env
+  // Remove PID file
   const agentDir = process.env.__LOBSTRCLAW_AGENT_DIR;
   if (agentDir) {
     removePid(agentDir);

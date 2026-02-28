@@ -5,6 +5,7 @@ import ora from 'ora';
 import { ROLES, ROLE_NAMES, type RoleName } from '../lib/roles';
 import { promptInit } from '../lib/prompts';
 import { generateAgentFiles } from '../lib/generator';
+import { setupWorkspaceAndWallet } from './setup';
 
 export function registerInitCommand(program: Command): void {
   program
@@ -15,7 +16,7 @@ export function registerInitCommand(program: Command): void {
     .option('--codename <codename>', 'Agent display name')
     .option('--output <path>', 'Output directory')
     .option('--no-docker', 'Skip Docker file generation')
-    .option('--no-wallet', 'Skip wallet creation')
+    .option('--no-wallet', 'Skip workspace and wallet creation')
     .action(async (name: string | undefined, opts: Record<string, unknown>) => {
       try {
         console.log(chalk.bold('\n  LobstrClaw — Agent Scaffolding\n'));
@@ -47,24 +48,9 @@ export function registerInitCommand(program: Command): void {
         console.log(chalk.dim('  Output:   ') + outputDir);
         console.log('');
 
-        // Generate workspace (optional)
+        // Generate agent config files
         const spinner = ora('Generating agent files...').start();
 
-        let walletCreated = false;
-        if (opts.wallet !== false) {
-          try {
-            const { createWorkspace } = require('openclaw');
-            createWorkspace(answers.name, answers.chain);
-            walletCreated = true;
-            spinner.text = 'Workspace created, generating config files...';
-          } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : String(err);
-            // Workspace creation is optional — don't fail the whole init
-            spinner.text = `Skipping workspace: ${msg}`;
-          }
-        }
-
-        // Generate files
         const agentNumber = String(Math.floor(Math.random() * 900) + 100);
         const created = generateAgentFiles({
           name: answers.name,
@@ -79,23 +65,35 @@ export function registerInitCommand(program: Command): void {
 
         spinner.succeed(`Agent scaffolded: ${created.length} files created`);
 
-        // Summary
         console.log('');
         console.log(chalk.bold('  Generated files:'));
         for (const file of created) {
           console.log(chalk.green(`    + ${file}`));
         }
-        if (walletCreated) {
-          console.log(chalk.green('    + OpenClaw workspace'));
+
+        // Set up workspace + wallet (unless --no-wallet)
+        let setupResult = null;
+        if (opts.wallet !== false) {
+          console.log('');
+          setupResult = await setupWorkspaceAndWallet(answers.name, answers.chain);
         }
 
+        // Summary
         console.log('');
         console.log(chalk.bold('  Next steps:'));
         console.log(chalk.dim('    1. Review and customize SOUL.md for your agent'));
-        console.log(chalk.dim('    2. Fund the agent wallet with ETH (gas) + LOB (staking)'));
+
+        if (setupResult?.walletAddress) {
+          console.log(chalk.dim(`    2. Fund ${setupResult.walletAddress} with ETH (gas) + LOB (staking)`));
+        } else {
+          console.log(chalk.dim(`    2. Run: lobstrclaw setup ${answers.name}  (creates workspace + wallet)`));
+        }
+
         if (docker) {
           console.log(chalk.dim('    3. Copy .env.example to .env and fill in secrets'));
-          console.log(chalk.dim(`    4. Run: lobstrclaw deploy ${answers.name}`));
+          console.log(chalk.dim(`    4. Run: lobstrclaw deploy ${answers.name}  (Docker) or lobstrclaw start ${answers.name}  (local)`));
+        } else {
+          console.log(chalk.dim(`    3. Run: lobstrclaw start ${answers.name}`));
         }
         console.log('');
       } catch (err: unknown) {

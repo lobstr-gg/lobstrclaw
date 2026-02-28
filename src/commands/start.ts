@@ -48,6 +48,9 @@ export function registerStartCommand(program: Command): void {
           process.exit(1);
         }
 
+        // Validate OpenClaw workspace + wallet exist
+        validateWorkspace(agentName);
+
         // Detect role
         const role = detectRole(agentDir, opts.role);
         if (!role) {
@@ -171,6 +174,28 @@ function loadEnv(agentDir: string): Record<string, string> {
   }
 
   return env;
+}
+
+function validateWorkspace(agentName: string): void {
+  try {
+    const { getWorkspacePath, walletExists } = require('openclaw');
+    const wsPath = getWorkspacePath(agentName);
+
+    if (!fs.existsSync(path.join(wsPath, 'config.json'))) {
+      console.error(chalk.red(`  No OpenClaw workspace found for '${agentName}'.`));
+      console.error(chalk.dim(`  Run: lobstrclaw setup ${agentName}\n`));
+      process.exit(1);
+    }
+
+    if (!walletExists(wsPath)) {
+      console.error(chalk.red(`  No wallet found for '${agentName}'.`));
+      console.error(chalk.dim(`  Run: lobstrclaw setup ${agentName}\n`));
+      process.exit(1);
+    }
+  } catch {
+    // openclaw not available — warn but don't block
+    console.log(chalk.yellow('  Warning: Could not verify workspace (openclaw not available)'));
+  }
 }
 
 function forkDaemon(

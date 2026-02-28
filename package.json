@@ -15,12 +15,14 @@
   "dependencies": {
     "chalk": "4.1.2",
     "commander": "^12.1.0",
+    "node-cron": "^3.0.3",
     "openclaw": "workspace:*",
     "openclaw-skill": "workspace:*",
     "ora": "5.4.1"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "@types/node-cron": "^3.0.11",
     "typescript": "^5.3.3"
   },
   "engines": {

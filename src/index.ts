@@ -1,6 +1,9 @@
 export { registerInitCommand } from './commands/init';
 export { registerDeployCommand } from './commands/deploy';
 export { registerStatusCommand } from './commands/status';
+export { registerStartCommand } from './commands/start';
+export { registerStopCommand } from './commands/stop';
+export { registerLogsCommand } from './commands/logs';
 export { registerAuditCommand } from './commands/audit';
 export { registerDoctorCommand } from './commands/doctor';
 export { registerConsensusCommand } from './commands/consensus';

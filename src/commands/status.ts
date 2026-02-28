@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import chalk from 'chalk';
+import { isRunning } from '../lib/pid';
 
 export function registerStatusCommand(program: Command): void {
   program
@@ -106,6 +107,20 @@ export function registerStatusCommand(program: Command): void {
           }
         } catch {
           console.log(chalk.dim('  [SKIP]') + ' OpenClaw not available for workspace check');
+        }
+
+        // Check local daemon
+        const { running: daemonRunning, info: daemonInfo } = isRunning(agentDir);
+        if (daemonRunning && daemonInfo) {
+          const uptime = Math.round((Date.now() - new Date(daemonInfo.startedAt).getTime()) / 1000);
+          const uptimeStr = uptime > 3600
+            ? `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m`
+            : uptime > 60
+              ? `${Math.floor(uptime / 60)}m ${uptime % 60}s`
+              : `${uptime}s`;
+          console.log(chalk.green('  [OK]  ') + `Local daemon running (PID ${daemonInfo.pid}, up ${uptimeStr}, role: ${daemonInfo.role})`);
+        } else {
+          console.log(chalk.dim('  [SKIP]') + ' Local daemon not running');
         }
 
         // Check Docker container (if Docker is available)

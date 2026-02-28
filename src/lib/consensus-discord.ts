@@ -3,7 +3,25 @@
 // for the consensus channel
 // ═══════════════════════════════════════════════════════════════════
 
-import { getDiscordClient, sendMessage } from 'openclaw';
+// Lazy-load Discord client — requires openclaw with discord.js at runtime
+function getOpenClawDiscord() {
+  try {
+    return require('openclaw') as {
+      getDiscordClient: () => any;
+      sendMessage: (channelId: string, content: any) => Promise<any>;
+    };
+  } catch {
+    throw new Error('Discord integration requires openclaw package. Install it or run inside the monorepo.');
+  }
+}
+
+function getDiscordClient() {
+  return getOpenClawDiscord().getDiscordClient();
+}
+
+function sendMessage(channelId: string, content: any): Promise<any> {
+  return getOpenClawDiscord().sendMessage(channelId, content);
+}
 import type { Proposal } from './memory-client';
 
 // ── Color constants for embeds ───────────────────────────────────
@@ -205,7 +223,7 @@ export function setupReactionWatcher(
 ): void {
   const client = getDiscordClient();
 
-  client.on('messageReactionAdd', async (reaction, user) => {
+  client.on('messageReactionAdd', async (reaction: any, user: any) => {
     // Ensure full data
     if (reaction.partial) {
       try { await reaction.fetch(); } catch { return; }
@@ -246,7 +264,7 @@ export function setupAgentVoteWatcher(
 ): void {
   const client = getDiscordClient();
 
-  client.on('messageCreate', (message) => {
+  client.on('messageCreate', (message: any) => {
     if (message.channelId !== channelId) return;
     if (!message.author.bot) return;
     if (!agentBotIds.has(message.author.id)) return;

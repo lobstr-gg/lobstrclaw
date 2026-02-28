@@ -73,7 +73,7 @@ export function registerDoctorCommand(program: Command): void {
       console.log(chalk.bold('  2. OpenClaw Workspace'));
 
       try {
-        const { getWorkspacePath, loadConfig, getActiveWorkspace } = require('openclaw');
+        const { getWorkspacePath, loadConfig, getActiveWorkspace } = require('../lib/workspace');
         const activeName = getActiveWorkspace();
         if (!activeName) {
           const r: CheckResult = { label: 'Active workspace', status: 'fail', detail: 'no active workspace set' };
@@ -157,7 +157,8 @@ export function registerDoctorCommand(program: Command): void {
 
       // Check for dangerous env vars
       try {
-        const { isDangerousEnvKey } = require('openclaw');
+        const isDangerousEnvKey = (key: string): boolean =>
+          /^(LD_|DYLD_|SSLKEYLOGFILE|NODE_OPTIONS|BASH_ENV|BASH_FUNC_|PYTHONSTARTUP|PERL5OPT|RUBYOPT)/i.test(key);
         const dangerous = Object.keys(process.env).filter((k) => isDangerousEnvKey(k));
         if (dangerous.length > 0) {
           const r: CheckResult = { label: 'Env sanitization', status: 'warn', detail: `${dangerous.length} dangerous key(s): ${dangerous.join(', ')}` };
@@ -337,7 +338,8 @@ export function registerDoctorCommand(program: Command): void {
         console.log(chalk.bold('  6. On-Chain Verification'));
 
         try {
-          const { ensureWorkspace, createPublicClient } = require('openclaw');
+          const { ensureWorkspace } = require('../lib/workspace');
+          const { createPublicClient } = require('openclaw');
           const ws = ensureWorkspace();
           const client = createPublicClient(ws.config);
 

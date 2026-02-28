@@ -202,7 +202,7 @@ function preprocessCronScripts(agentDir: string, config: DaemonConfig): string {
   // Workspace directory — use OpenClaw workspace if available, else agent dir
   let workspaceDir = agentDir;
   try {
-    const { getWorkspacePath } = require('openclaw');
+    const { getWorkspacePath } = require('./workspace');
     const wsPath = getWorkspacePath(config.agentName);
     if (fs.existsSync(path.join(wsPath, 'config.json'))) {
       workspaceDir = wsPath;
@@ -256,7 +256,7 @@ function startHeartbeat(agentDir: string, agentName: string): void {
   // Also try to write to workspace heartbeats.jsonl for status command compatibility
   let workspaceHeartbeat: string | null = null;
   try {
-    const { getWorkspacePath } = require('openclaw');
+    const { getWorkspacePath } = require('./workspace');
     const wsPath = getWorkspacePath(agentName);
     if (fs.existsSync(path.join(wsPath, 'config.json'))) {
       workspaceHeartbeat = path.join(wsPath, 'heartbeats.jsonl');

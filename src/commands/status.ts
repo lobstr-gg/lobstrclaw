@@ -76,7 +76,7 @@ export function registerStatusCommand(program: Command): void {
 
         // Check OpenClaw workspace
         try {
-          const { getWorkspacePath } = require('openclaw');
+          const { getWorkspacePath } = require('../lib/workspace');
           const wsPath = getWorkspacePath(agentName);
           if (fs.existsSync(path.join(wsPath, 'config.json'))) {
             console.log(chalk.green('  [OK]  ') + `Workspace: ${wsPath}`);

@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { execFile, execFileSync } from 'child_process';
-import { loadWallet, decryptKey, ensureWorkspace } from 'openclaw';
+import { loadWallet, decryptKey, ensureWorkspace } from './workspace';
 
 const TX_TIMEOUT_MS = 60_000;
 

@@ -658,7 +658,8 @@ export function registerAuditCommand(program: Command): void {
 // ── Setup helper ─────────────────────────────────────────────────────
 
 async function setup(extraAddresses?: string[]) {
-  const { ensureWorkspace, createPublicClient } = require('openclaw');
+  const { ensureWorkspace, loadWallet } = require('../lib/workspace');
+  const { createPublicClient } = require('openclaw');
   const ws = ensureWorkspace();
   const client = createPublicClient(ws.config);
 
@@ -668,7 +669,6 @@ async function setup(extraAddresses?: string[]) {
   // Gather addresses to check: agent wallet + any provided
   let agentAddresses: string[] = extraAddresses || [];
   try {
-    const { loadWallet } = require('openclaw');
     const wallet = loadWallet(ws.path);
     if (wallet.address && !agentAddresses.includes(wallet.address)) {
       agentAddresses.unshift(wallet.address);

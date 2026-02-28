@@ -178,7 +178,7 @@ function loadEnv(agentDir: string): Record<string, string> {
 
 function validateWorkspace(agentName: string): void {
   try {
-    const { getWorkspacePath, walletExists } = require('openclaw');
+    const { getWorkspacePath, walletExists } = require('../lib/workspace');
     const wsPath = getWorkspacePath(agentName);
 
     if (!fs.existsSync(path.join(wsPath, 'config.json'))) {

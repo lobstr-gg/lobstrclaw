@@ -3,6 +3,16 @@ import * as fs from 'fs';
 import * as path from 'path';
 import chalk from 'chalk';
 import ora from 'ora';
+import {
+  createWorkspace,
+  getWorkspacePath,
+  loadConfig,
+  encryptKey,
+  saveWallet,
+  walletExists,
+  loadWallet,
+  promptPassword,
+} from '../lib/workspace';
 
 /**
  * lobstrclaw setup [name]
@@ -89,21 +99,6 @@ export async function setupWorkspaceAndWallet(
   };
 
   // ── Step 1: Create or verify workspace ──────────────────────────
-  let createWorkspace: (name: string, chain?: string) => any;
-  let getWorkspacePath: (name: string) => string;
-  let loadConfig: (name: string) => any;
-
-  try {
-    const openclaw = require('openclaw');
-    createWorkspace = openclaw.createWorkspace;
-    getWorkspacePath = openclaw.getWorkspacePath;
-    loadConfig = openclaw.loadConfig;
-  } catch {
-    console.error(chalk.red('  OpenClaw package not available.'));
-    console.error(chalk.dim('  Ensure openclaw is installed: pnpm add openclaw\n'));
-    process.exit(1);
-  }
-
   const wsPath = getWorkspacePath(agentName);
   result.workspacePath = wsPath;
 
@@ -133,24 +128,6 @@ export async function setupWorkspaceAndWallet(
   }
 
   // ── Step 2: Create or verify wallet ─────────────────────────────
-  let encryptKey: (key: string, password: string) => any;
-  let saveWallet: (path: string, wallet: any) => void;
-  let walletExists: (path: string) => boolean;
-  let loadWallet: (path: string) => any;
-  let promptPassword: (prompt?: string) => Promise<string>;
-
-  try {
-    const openclaw = require('openclaw');
-    encryptKey = openclaw.encryptKey;
-    saveWallet = openclaw.saveWallet;
-    walletExists = openclaw.walletExists;
-    loadWallet = openclaw.loadWallet;
-    promptPassword = openclaw.promptPassword;
-  } catch {
-    console.error(chalk.red('  OpenClaw wallet module not available.\n'));
-    process.exit(1);
-  }
-
   if (walletExists(wsPath)) {
     const spinner = ora('Wallet already exists, verifying...').start();
     try {
@@ -164,7 +141,7 @@ export async function setupWorkspaceAndWallet(
     }
   } else {
     // Need to create wallet — get password
-    const password = await getWalletPassword(promptPassword);
+    const password = await getWalletPassword();
     if (!password) {
       console.log(chalk.yellow('  Wallet creation skipped (no password provided).'));
       console.log(chalk.dim('  Run later: lobstrclaw setup ' + agentName + '\n'));
@@ -187,11 +164,11 @@ export async function setupWorkspaceAndWallet(
         privateKey = importKey;
         address = account.address;
       } else {
-        // Generate new key
-        const { generatePrivateKey, privateKeyToAccount } = require('viem/accounts');
-        privateKey = generatePrivateKey();
-        const account = privateKeyToAccount(privateKey as `0x${string}`);
-        address = account.address;
+        // Generate new key using Node.js crypto (no viem dependency needed)
+        const { createKeyPair } = await import('../lib/keygen');
+        const kp = createKeyPair();
+        privateKey = kp.privateKey;
+        address = kp.address;
       }
 
       const encrypted = encryptKey(privateKey, password);
@@ -219,9 +196,7 @@ export async function setupWorkspaceAndWallet(
  * Get wallet password — from env var (non-interactive) or prompt.
  * Returns null if no password available (e.g., piped input, no tty).
  */
-async function getWalletPassword(
-  promptPassword: (prompt?: string) => Promise<string>,
-): Promise<string | null> {
+async function getWalletPassword(): Promise<string | null> {
   // Non-interactive: use env var
   if (process.env.OPENCLAW_PASSWORD) {
     const pw = process.env.OPENCLAW_PASSWORD;

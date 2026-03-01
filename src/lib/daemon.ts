@@ -189,12 +189,15 @@ function preprocessCronScripts(agentDir: string, config: DaemonConfig): string {
   const localScriptsDir = path.join(dotDir, 'scripts');
   fs.mkdirSync(localScriptsDir, { recursive: true });
 
+  // Scripts are copied first (raw), then rewritten after we know all paths
+  const pendingScriptFiles: string[] = [];
   if (templateScriptsDir) {
     for (const file of fs.readdirSync(templateScriptsDir)) {
       if (!file.endsWith('.sh')) continue;
       const src = fs.readFileSync(path.join(templateScriptsDir, file), 'utf-8');
       const dest = path.join(localScriptsDir, file);
       fs.writeFileSync(dest, src, { mode: 0o755 });
+      pendingScriptFiles.push(dest);
     }
     log(`Copied shared scripts to ${localScriptsDir}`);
   }
@@ -227,12 +230,27 @@ function preprocessCronScripts(agentDir: string, config: DaemonConfig): string {
     content = content.replace(/\/var\/log\/agent\//g, logsDir + '/');
     content = content.replace(/\/data\/workspace/g, workspaceDir);
     content = content.replace(/\/tmp\/agent-env/g, path.join(tmpDir, 'agent-env'));
+    content = content.replace(/\/etc\/agent\//g, path.join(agentDir, '/'));
 
     const dest = path.join(cronDir, file);
     fs.writeFileSync(dest, content, { mode: 0o755 });
   }
 
   log(`Preprocessed cron scripts in ${cronDir}`);
+
+  // Rewrite Docker paths inside shared scripts too (brain.sh, llm.sh reference /opt/scripts/)
+  for (const scriptPath of pendingScriptFiles) {
+    let content = fs.readFileSync(scriptPath, 'utf-8');
+    content = content.replace(/\/opt\/scripts\//g, localScriptsDir + '/');
+    content = content.replace(/\/opt\/cron\//g, cronDir + '/');
+    content = content.replace(/\/var\/log\/agent\//g, logsDir + '/');
+    content = content.replace(/\/data\/workspace/g, workspaceDir);
+    content = content.replace(/\/tmp\/agent-env/g, path.join(tmpDir, 'agent-env'));
+    content = content.replace(/\/etc\/agent\//g, path.join(agentDir, '/'));
+    fs.writeFileSync(scriptPath, content, { mode: 0o755 });
+  }
+  log(`Preprocessed shared scripts in ${localScriptsDir}`);
+
   return cronDir;
 }
 

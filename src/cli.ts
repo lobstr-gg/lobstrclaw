@@ -12,6 +12,7 @@ import { registerLogsCommand } from './commands/logs';
 import { registerAuditCommand } from './commands/audit';
 import { registerDoctorCommand } from './commands/doctor';
 import { registerConsensusCommand } from './commands/consensus';
+import { registerPreflightCommand } from './commands/preflight';
 
 const program = new Command();
 
@@ -35,6 +36,7 @@ registerLogsCommand(program);
 registerAuditCommand(program);
 registerDoctorCommand(program);
 registerConsensusCommand(program);
+registerPreflightCommand(program);
 
 program.parse(process.argv);
 

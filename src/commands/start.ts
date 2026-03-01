@@ -5,6 +5,7 @@ import { fork } from 'child_process';
 import chalk from 'chalk';
 import { isRunning } from '../lib/pid';
 import { ROLES, ROLE_NAMES, type RoleName } from '../lib/roles';
+import { runPreflight } from './preflight';
 
 export function registerStartCommand(program: Command): void {
   program
@@ -14,31 +15,19 @@ export function registerStartCommand(program: Command): void {
     .option('--role <role>', 'Override role detection (moderator|arbitrator|dao-ops)')
     .option('--no-discord', 'Disable Discord bot supervisor')
     .option('--no-cron', 'Disable cron scheduler')
+    .option('--skip-preflight', 'Skip preflight checks before starting')
     .action(async (name: string | undefined, opts: {
       foreground?: boolean;
       role?: string;
       discord: boolean;
       cron: boolean;
+      skipPreflight?: boolean;
     }) => {
       try {
         console.log(chalk.bold('\n  LobstrClaw — Start Agent\n'));
 
         const agentDir = name ? path.resolve(process.cwd(), name) : process.cwd();
         const agentName = name || path.basename(agentDir);
-
-        // Validate required files
-        const requiredFiles = ['SOUL.md', 'HEARTBEAT.md', 'crontab'];
-        const missing: string[] = [];
-        for (const file of requiredFiles) {
-          if (!fs.existsSync(path.join(agentDir, file))) {
-            missing.push(file);
-          }
-        }
-        if (missing.length > 0) {
-          console.error(chalk.red(`  Missing required files: ${missing.join(', ')}`));
-          console.error(chalk.dim(`  Run 'lobstrclaw init ${agentName}' first.\n`));
-          process.exit(1);
-        }
 
         // Check not already running
         const { running, info } = isRunning(agentDir);
@@ -48,8 +37,32 @@ export function registerStartCommand(program: Command): void {
           process.exit(1);
         }
 
-        // Validate OpenClaw workspace + wallet exist
-        validateWorkspace(agentName);
+        // Run preflight checks (workspace, agent files, network, contracts, monorepo wiring)
+        if (!opts.skipPreflight) {
+          console.log(chalk.bold('  Running preflight checks...\n'));
+          const preflight = await runPreflight({ agentName, agentDir, chain: 'base' });
+          if (!preflight.passed) {
+            console.error(chalk.red('  Preflight failed — fix the issues above before starting.'));
+            console.error(chalk.dim('  Use --skip-preflight to bypass.\n'));
+            process.exit(1);
+          }
+          console.log(chalk.green('  Preflight passed.\n'));
+        } else {
+          // Minimal validation when preflight is skipped
+          const requiredFiles = ['SOUL.md', 'HEARTBEAT.md', 'crontab'];
+          const missing: string[] = [];
+          for (const file of requiredFiles) {
+            if (!fs.existsSync(path.join(agentDir, file))) {
+              missing.push(file);
+            }
+          }
+          if (missing.length > 0) {
+            console.error(chalk.red(`  Missing required files: ${missing.join(', ')}`));
+            console.error(chalk.dim(`  Run 'lobstrclaw init ${agentName}' first.\n`));
+            process.exit(1);
+          }
+          validateWorkspace(agentName);
+        }
 
         // Detect role
         const role = detectRole(agentDir, opts.role);

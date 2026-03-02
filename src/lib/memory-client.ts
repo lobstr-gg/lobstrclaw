@@ -52,6 +52,29 @@ function getConfig(): MemoryClientConfig {
   return { baseUrl: baseUrl.replace(/\/$/, ''), apiKey, agentName };
 }
 
+// ── Retry configuration ─────────────────────────────────────────
+
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1000;
+const RETRYABLE_STATUS_CODES = new Set([502, 503, 504, 429]);
+
+function isRetryable(err: unknown): boolean {
+  if (err instanceof Error) {
+    const msg = err.message;
+    // Network errors
+    if (/ECONNRESET|ECONNREFUSED|ETIMEDOUT|EPIPE|fetch failed/i.test(msg)) return true;
+    // HTTP status codes we retry
+    for (const code of RETRYABLE_STATUS_CODES) {
+      if (msg.includes(`(${code})`)) return true;
+    }
+  }
+  return false;
+}
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function request<T>(
   method: string,
   path: string,
@@ -67,18 +90,49 @@ async function request<T>(
     'X-Agent-Name': cfg.agentName,
   };
 
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let lastError: Error | null = null;
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(`Memory API ${method} ${path} failed (${res.status}): ${text}`);
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => res.statusText);
+        const err = new Error(`Memory API ${method} ${path} failed (${res.status}): ${text}`);
+
+        // Retry on transient server errors
+        if (RETRYABLE_STATUS_CODES.has(res.status) && attempt < MAX_RETRIES) {
+          lastError = err;
+          const delay = BASE_DELAY_MS * Math.pow(2, attempt);
+          console.error(`[memory-client] ${method} ${path} returned ${res.status}, retrying in ${delay}ms (${attempt + 1}/${MAX_RETRIES})`);
+          await sleep(delay);
+          continue;
+        }
+
+        throw err;
+      }
+
+      return res.json() as Promise<T>;
+    } catch (err: unknown) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+
+      // Retry on network errors
+      if (attempt < MAX_RETRIES && isRetryable(err)) {
+        const delay = BASE_DELAY_MS * Math.pow(2, attempt);
+        console.error(`[memory-client] ${method} ${path} failed (${lastError.message.slice(0, 100)}), retrying in ${delay}ms (${attempt + 1}/${MAX_RETRIES})`);
+        await sleep(delay);
+        continue;
+      }
+
+      throw lastError;
+    }
   }
 
-  return res.json() as Promise<T>;
+  throw lastError || new Error(`Memory API ${method} ${path} failed after ${MAX_RETRIES} retries`);
 }
 
 // ── Proposal CRUD ────────────────────────────────────────────────

@@ -207,12 +207,15 @@ export function registerConsensusCommand(program: Command): void {
           console.log(chalk.yellow(`Expired ${expired} stale proposal(s)`));
         }
 
-        const { executed, failed } = await executeAllApproved(config);
+        const { executed, failed, remaining } = await executeAllApproved(config);
         if (executed > 0) {
           console.log(chalk.green(`Executed ${executed} approved proposal(s)`));
         }
         if (failed > 0) {
           console.log(chalk.red(`Failed to execute ${failed} proposal(s)`));
+        }
+        if (remaining > 0) {
+          console.log(chalk.yellow(`${remaining} approved proposal(s) queued for next cycle`));
         }
         if (expired === 0 && executed === 0 && failed === 0) {
           console.log(chalk.dim('Nothing to resolve'));

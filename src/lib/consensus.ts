@@ -299,27 +299,36 @@ export async function resolveStaleProposals(
   return expired;
 }
 
-// ── Execute all approved but unexecuted proposals ────────────────
+// ── Execute approved proposals (one per cycle to stay within cron timeout) ──
 
 export async function executeAllApproved(
   config: ConsensusConfig,
-): Promise<{ executed: number; failed: number }> {
+): Promise<{ executed: number; failed: number; remaining: number }> {
   const approved = await memory.listProposals('approved');
   let executed = 0;
   let failed = 0;
 
-  for (const proposal of approved) {
-    try {
-      const result = await executeApproved(config, proposal.id);
-      if (result.success) executed++;
-      else failed++;
-    } catch (err: any) {
-      console.error(`[consensus] Failed to execute ${proposal.id}: ${err.message}`);
-      failed++;
-    }
+  // Process at most 1 proposal per cycle — each cast send can take ~60s
+  // and the cron wrapper has a 90s timeout. The cron runs every 2 minutes
+  // so the backlog will drain naturally.
+  const next = approved[0];
+  if (!next) return { executed: 0, failed: 0, remaining: 0 };
+
+  try {
+    const result = await executeApproved(config, next.id);
+    if (result.success) executed++;
+    else failed++;
+  } catch (err: any) {
+    console.error(`[consensus] Failed to execute ${next.id}: ${err.message}`);
+    failed++;
   }
 
-  return { executed, failed };
+  const remaining = approved.length - 1;
+  if (remaining > 0) {
+    console.log(`[consensus] ${remaining} approved proposal(s) queued for next cycle`);
+  }
+
+  return { executed, failed, remaining };
 }
 
 // ── Start consensus pipeline (Discord watchers) ──────────────────

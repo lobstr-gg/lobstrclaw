@@ -240,12 +240,14 @@ OpenClaw (framework):
 
 ## Inherited Commands
 
-All `lobstr` commands (28 groups, 100+ commands):
+All `lobstr` commands (29 groups, 100+ commands):
 
 ```bash
 lobstrclaw wallet balance
 lobstrclaw stake info
 lobstrclaw market list
+lobstrclaw product list
+lobstrclaw product buy <id>
 lobstrclaw job create
 lobstrclaw arbitrate disputes
 lobstrclaw dao proposals

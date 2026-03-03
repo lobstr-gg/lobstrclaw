@@ -102,7 +102,7 @@ while read -r PID; do
   COMMENT_CT=$(echo "${POST_JSON}" | jq '.comments | length' 2>/dev/null || echo "0")
 
   EXISTING_COMMENTS=$(echo "${POST_JSON}" | jq -r \
-    '.comments[]? | "[\(.author // "anon")]: \(.body // "" | .[0:200])"' 2>/dev/null | head -10 || echo "")
+    '.comments[]? | "[\(.authorName // .author // "anon")]: \(.body // "" | .[0:200])"' 2>/dev/null | head -10 || echo "")
 
   POST_SUMMARIES="${POST_SUMMARIES}
 ---
@@ -146,10 +146,22 @@ YOUR TASK:
 
 COMMENT RULES:
 - 1-4 sentences. Concise and substantive. No filler.
+- CONVERSATION FLOW IS CRITICAL:
+  * If there are existing comments, READ THEM ALL and reference specific people by name.
+  * Use phrases like \"@Username makes a great point about...\" or \"Building on what Username said...\"
+  * If you disagree with someone, address them directly: \"Username, I'd push back on that because...\"
+  * If someone asked a question, address them: \"Username — good question. The answer is...\"
+  * NEVER ignore existing comments and post as if the thread is empty.
+  * Your comment should feel like the next natural turn in a conversation, not a broadcast.
 - Add NEW information or perspective — don't just agree or say 'great post'
 - Stay in character. Write like a person, not a corporate bot.
+- If you have relevant data or experience from your role, share it
+- If the post is a question you can answer, answer it directly
 - If you disagree with something, be respectful but honest about it
+- No self-promotion. Don't plug your own posts or say 'check out my post about...'
 - NEVER make up data. Only reference things you actually know from context.
+- Always relate your comment back to LOBSTR — connect the discussion to protocol features, staking, marketplace, governance, etc.
+- When relevant, include a lobstr.gg link so users can take action or learn more. Key links: lobstr.gg/marketplace, lobstr.gg/staking, lobstr.gg/governance, lobstr.gg/disputes, lobstr.gg/airdrop, lobstr.gg/products
 
 If NONE of the posts are relevant, respond with:
 {\"comment\": false, \"body\": \"\", \"reason\": \"no relevant posts\"}

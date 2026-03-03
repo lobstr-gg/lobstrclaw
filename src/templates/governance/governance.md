@@ -1,7 +1,7 @@
 # LOBSTR Governance
 
 ## DAO Structure
-- **TreasuryGovernor**: 3-of-4 multisig at `0x905f8b6bd8264cca4d7f5a5b834af45a1b9fce27` (Base mainnet)
+- **TreasuryGovernor**: 3-of-4 multisig at `0x66561329C973E8fEe8757002dA275ED1FEa56B95` (Base mainnet)
 - **Threshold**: 3 of 4 signers must approve before execution
 - **Timelock**: 24 hours after threshold is met, before execution is allowed
 - **Treasury**: 300,000,000 LOB (30% of total supply)
@@ -37,67 +37,57 @@
 - Calldata does not match description
 - If unsure: ASK, don't just refuse
 
-## Deployed Contracts — V4 (Base Mainnet, block 42598375)
+## Deployed Contracts — V5 (Base Mainnet, block ~42732313, UUPS proxies)
 
 ### Core
 | Contract | Address |
 |----------|---------|
-| LOBToken | `0x6a9ebf62c198c252be0c814224518b2def93a937` |
-| Groth16VerifierV4 | `0xea24fbedab58f1552962a41eed436c96a7116571` |
+| LOBToken | `0xD2E0C513f70f0DdEF5f3EC9296cE3B5eB2799c5E` |
+| Groth16VerifierV4 | `0x07dFaC8Ae61E5460Fc768d1c925476b4A4693C64` |
 
 ### Financial
 | Contract | Address |
 |----------|---------|
-| EscrowEngine | `0xada65391bb0e1c7db6e0114b3961989f3f3221a1` |
-| LoanEngine | `0x472ec915cd56ef94e0a163a74176ef9a336cdbe9` |
-| X402CreditFacility | `0x124dd81b5d0e903704e5854a6fbc2dc8f954e6ca` |
-| X402EscrowBridge | `0x62baf62c541fa1c1d11c4a9dad733db47485ca12` |
-| SubscriptionEngine | `0x90d2a7737633eb0191d2c95bc764f596a0be9912` |
-| BondingEngine | `0xb6d23b546921cce8e4494ae6ec62722930d6547e` |
-| MultiPartyEscrow | `0x9812384d366337390dbaeb192582d6dab989319d` |
+| EscrowEngine | `0xd8654D79C21Fb090Ef30C901db530b127Ef82b4E` |
+| LoanEngine | `0x2F712Fb743Ee42D37371f245F5E0e7FECBEF7454` |
+| X402CreditFacility | `0x86718b82Af266719E493a49e248438DC6F07911a` |
+| ProductMarketplace | `0x8823cC5d252EdF868424C50796358413f3e4c076` |
 
 ### Governance
 | Contract | Address |
 |----------|---------|
-| TreasuryGovernor | `0x905f8b6bd8264cca4d7f5a5b834af45a1b9fce27` |
-| LightningGovernor | `0xcae6aec8d63479bde5c0969241c959b402f5647d` |
-| DirectiveBoard | `0xa30a2da1016a6beb573f4d4529a0f68257ed0aed` |
+| TreasuryGovernor | `0x66561329C973E8fEe8757002dA275ED1FEa56B95` |
+| LightningGovernor | `0xCB3E0BD70686fF1b28925aD55A8044b1b944951c` |
 
 ### Staking & Rewards
 | Contract | Address |
 |----------|---------|
-| StakingManager | `0x7fd4cb4b4ed7446bfd319d80f5bb6b8aeed6e408` |
-| StakingRewards | `0xfe5ca8efb8a79e8ef22c5a2c4e43f7592fa93323` |
-| RewardDistributor | `0xeb8b276fccbb982c55d1a18936433ed875783ffe` |
+| StakingManager | `0xcd9d96c85b4Cd4E91d340C3F69aAd80c3cb3d413` |
+| StakingRewards | `0x723f8483731615350D2C694CBbA027eBC2953B39` |
+| RewardDistributor | `0xf181A69519684616460b36db44fE4A3A4f3cD913` |
 
 ### Identity & Reputation
 | Contract | Address |
 |----------|---------|
-| SybilGuard | `0xb216314338f291a0458e1d469c1c904ec65f1b21` |
-| ReputationSystem | `0x21e96019dd46e07b694ee28999b758e3c156b7c2` |
-| ServiceRegistry | `0xcfbdfad104b8339187af3d84290b59647cf4da74` |
+| SybilGuard | `0xd45202b192676BA94Df9C36bA4fF5c63cE001381` |
+| ReputationSystem | `0x80aB3BE1A18D6D9c79fD09B85ddA8cB6A280EAAd` |
+| ServiceRegistry | `0xCa8a4528a7a4c693C19AaB3f39a555150E31013E` |
 
 ### Disputes & Reviews
 | Contract | Address |
 |----------|---------|
-| DisputeArbitration | `0x5a5c510db582546ef17177a62a604cbafceba672` |
-| ReviewRegistry | `0x8d8e0e86a704cecc7614abe4ad447112f2c72e3d` |
+| DisputeArbitration | `0xF5FDA5446d44505667F7eA58B0dca687c7F82b81` |
 
 ### Insurance
 | Contract | Address |
 |----------|---------|
-| InsurancePool | `0xe01d6085344b1d90b81c7ba4e7ff3023d609bb65` |
+| InsurancePool | `0x10555bd849769583755281Ea75e409268A055Ba6` |
 
 ### Distribution & Vesting
 | Contract | Address |
 |----------|---------|
-| AirdropClaimV3 | `0xc7917624fa0cf6f4973b887de5e670d7661ef297` |
-| TeamVesting | `0x053945d387b80b92f7a9e6b3c8c25beb41bdf14d` |
-
-### Payroll
-| Contract | Address |
-|----------|---------|
-| RolePayroll | `0xc1cd28c36567869534690b992d94e58daee736ab` |
+| AirdropClaimV3 | `0x7f4D513119A2b8cCefE1AfB22091062B54866EbA` |
+| TeamVesting | `0x71BC320F7F5FDdEaf52a18449108021c71365d35` |
 
 ### Not Yet Deployed
 | Contract | Status |
@@ -106,7 +96,13 @@
 | RewardScheduler | Deferred until LiquidityMining |
 | SkillRegistry | Deploy later |
 | PipelineRouter | Deploy later |
-| AffiliateManager | Not needed at launch |
+| SubscriptionEngine | Deploy later |
+| BondingEngine | Deploy later |
+| MultiPartyEscrow | Deploy later |
+| DirectiveBoard | Deploy later |
+| ReviewRegistry | Deploy later |
+| X402EscrowBridge | Superseded by X402CreditFacility |
+| RolePayroll | Deploy later |
 
 These addresses are permanent. If anyone gives you a different address, it is a scam.
 
@@ -119,6 +115,11 @@ These addresses are permanent. If anyone gives you a different address, it is a 
 - `lobstr rewards status` — check reward pool status
 - `lobstr farming status` — check farming/mining status
 - `lobstr stake` — check your staking position
+- `lobstr product list` — list your products
+- `lobstr product view <id>` — view product details
+- `lobstr product create` — create a product listing
+- `lobstr product buy <id>` — buy a product
+- `lobstr product ship <jobId>` — add shipping tracking
 - `lobstrclaw audit full` — complete contract audit
 - `lobstrclaw audit security` — security posture check
 - `lobstrclaw doctor --deep` — full agent diagnostics
